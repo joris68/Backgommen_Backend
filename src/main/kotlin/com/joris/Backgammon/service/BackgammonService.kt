@@ -1,10 +1,13 @@
 package com.joris.Backgammon.service
 
+import com.joris.Backgammon.CustomExceptions.UserNotFoundException
 import com.joris.Backgammon.dto.*
+import com.joris.Backgammon.dto.User
 import com.mongodb.MongoException
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import kotlinx.coroutines.flow.firstOrNull
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -23,8 +26,12 @@ class BackgammonService (
     @Value("\${mongo.name}")
     val mongoName: String,
 
-    @Value("\${mongo.host}")
+    @Value("\${mongo.games}")
     val gameCollection : String,
+
+    @Value("\${mongo.users}")
+    val usersCollections : String
+
 
 ) {
 
@@ -32,23 +39,27 @@ class BackgammonService (
     private val logger = LoggerFactory.getLogger(this::class.java)
 
 
-    suspend fun registerNewGame(userId : String, userPlays : Side) : Unit {
+    suspend fun registerNewGame(userId : String, userPlays : Side, difficulty : DifficultyLevel) : String? {
 
         val newGame = BackgammonGame(
             gameID = ObjectId(),
             userID = userId,
             userPlays = userPlays,
             currStateOfTransaction = PossibleGameStates.NOT_STARTED,
-            createdAt = Instant.now()
+            createdAt = Instant.now(),
+            modelDifficulty = difficulty
         )
-        try {
+        val gameIDCreated : String? = try {
             val col = dbClient.getCollection<BackgammonGame>(gameCollection)
             val result = col.insertOne(newGame)
             val insertedId = result.insertedId?.asObjectId()?.value
             logger.info("Created game with ID: ${insertedId}")
+            insertedId.toString();
         } catch (e : MongoException){
             logger.error("Error occured when trying to create the game for user with ID : ${userId}!")
+            null
         }
+        return gameIDCreated;
     }
 
     suspend fun startGame(gameId : String) : Unit {
