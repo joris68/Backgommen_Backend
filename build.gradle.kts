@@ -16,6 +16,7 @@ java {
 
 repositories {
 	mavenCentral()
+	google()
 }
 
 dependencies {
@@ -25,11 +26,11 @@ dependencies {
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-retry:1.0.0")
+	//implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+	//implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.0")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.4.0")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.8.1")
 
 	implementation("com.squareup.moshi:moshi:1.15.0")
 	implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
@@ -37,6 +38,8 @@ dependencies {
 	implementation(platform("org.mongodb:mongodb-driver-bom:5.4.0"))
 	implementation("org.mongodb:bson-kotlinx:5.4.0")
 	implementation("org.mongodb:mongodb-driver-kotlin-coroutine")
+
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
 }
 
 kotlin {

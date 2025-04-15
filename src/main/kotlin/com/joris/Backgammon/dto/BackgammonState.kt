@@ -51,12 +51,18 @@ data class GameMove(
     val predictionId : String
 )
 
+enum class DifficultyLevel{
+    EASY, MEDIUM, HARD
+}
+
+
 data class BackgammonGame(
     @BsonId
     val gameID : ObjectId? = null,
     val userPlays : Side,
     val started : Player? = null,
     val userID : String,
+    val modelDifficulty: DifficultyLevel,
     val startedAt : String? = null,
     val finishedAt : String? = null,
     val createdAt : Instant,

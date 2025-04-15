@@ -7,6 +7,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitExchange
 
-val REQUIREDCOLLECTIONS = listOf("users", "games")
+val REQUIREDCOLLECTIONS = setOf("users", "games", "sessions")
 
 @Service
 class SetupService(
@@ -30,18 +31,22 @@ class SetupService(
 
     @EventListener(ApplicationReadyEvent::class)
     suspend fun initApplication(){
+        logger.info("start init the app!")
         initDatabase()
         checkBackgammonService()
     }
 
     suspend fun checkBackgammonService(){
-        val client = WebClient.create("${this.backgammonServiceHost}:$${this.backgammonServicePort}");
+        logger.info("starting the health check for the backgammon backend")
+        val client = WebClient.create("http://${backgammonServiceHost}:${backgammonServicePort}");
         client.get()
             .uri("/health")
             .accept(MediaType.APPLICATION_JSON)
             .awaitExchange { response ->
                 if (response.statusCode() != HttpStatus.OK){
                     throw Exception("Backgammon Service not reachable")
+                }else{
+                    logger.info("Health sing from backgammon backend")
                 }
             }
 
@@ -49,20 +54,23 @@ class SetupService(
 
     suspend fun initDatabase(){
         logger.info("start initializing mongoDB")
-        val mongoClient = MongoClient.create("mongo://${this.mongoHost}${this.mongoPort}")
+        val mongoClient = MongoClient.create("mongodb://${this.mongoHost}:${this.mongoPort}")
         val db = mongoClient.getDatabase(dbName)
         val collectionNames: Flow<String> = db.listCollectionNames()
-        val collectionsList = collectionNames.toList()
+        val collectionsList = collectionNames.toSet()
         logger.info("Found collections in the db : ${collectionsList}")
         if (collectionsList == REQUIREDCOLLECTIONS) {
             logger.info("All collections already available")
         }
         else {
-                db.createCollection(REQUIREDCOLLECTIONS[0])
-                logger.info("successfully created the ${REQUIREDCOLLECTIONS[0]}")
-                db.createCollection(REQUIREDCOLLECTIONS[1])
-                logger.info("successfully created the ${REQUIREDCOLLECTIONS[1]}")
+                val remainingCollections = REQUIREDCOLLECTIONS - collectionsList
+            for (col in remainingCollections){
+                db.createCollection(col)
+                logger.info("collection: ${col} created")
+            }
         }
+        mongoClient.close()
+        logger.info("setup client closed")
     }
 
 }
