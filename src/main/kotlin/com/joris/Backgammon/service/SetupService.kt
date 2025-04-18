@@ -1,6 +1,8 @@
 package com.joris.Backgammon.service
 
 
+import com.joris.Backgammon.dto.Sessions
+import com.mongodb.client.model.Indexes
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent

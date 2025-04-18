@@ -1,5 +1,5 @@
 package com.joris.Backgammon.service
-import com.joris.Backgammon.CustomExceptions.UserAlreadyExistException
+import com.joris.Backgammon.dto.Sessions
 import com.joris.Backgammon.dto.User
 import com.mongodb.MongoException
 import com.mongodb.client.model.Filters
@@ -7,16 +7,21 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import kotlinx.coroutines.flow.firstOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.Base64
+import java.time.Duration
+import java.time.Instant
+import java.util.*
 
-
-
+@Service
 class UserService (
     private val database : MongoDatabase,
     @Value("\${mongo.users}")
-    val usersCollections : String
+    val usersCollections : String,
+
+    @Value("\${mongo.sessions}")
+    val sessionsCollection : String
 )
 {
 
@@ -49,34 +54,55 @@ class UserService (
         return salt
     }
 
-    private fun generateSession(){
-
+    private fun generateSession() : String{
+        val uuid = UUID.randomUUID()
+        return uuid.toString()
     }
 
-    suspend fun checkUserExists(userName : String, email : String) : Boolean{
+
+    suspend fun checkUserExists( email : String) : Boolean{
+        logger.info("start checking if user : ${email} exists")
         val userCol = database.getCollection<User>(usersCollections);
         val filter = Filters.or(
-            Filters.eq(User::userName.name, userName),
             Filters.eq(User::email.name, email)
         )
         val res = userCol.find(filter);
-        return res.firstOrNull() == null
+        val found = res.firstOrNull() != null
+        logger.info("result : ${found}")
+        return found;
     }
 
-    suspend fun loginUser(userName : String, password : String) : Unit {
+    suspend fun loginUser(email : String, password : String) : String? {
         val userCol = database.getCollection<User>(usersCollections);
-        val userNameFilter = Filters.eq(User::userName.name, userName);
-        val res = userCol.find(userNameFilter)
-
-
         val passwordHash = hashPassword(password);
-        val filter = Filters.eq(User::password.name, passwordHash);
-        userCol.find(filter)
+        logger.info(passwordHash)
+        val filters = Filters.and(
+            Filters.eq(User::email.name, email),
+            Filters.eq(User::password.name, passwordHash)
+        )
+
+        val userFound = userCol.find(filters).firstOrNull()
+        logger.info(userFound.toString())
+        if (userFound is User){
+            val sessionId =  generateSession();
+            val sessCol = database.getCollection<Sessions>(sessionsCollection);
+            val newSession = Sessions(
+                userId = userFound.userId!!,
+                sessionId = sessionId,
+                createdAt = Date.from(Instant.now()),
+                expiresAt = Date.from(Instant.now().plus(Duration.ofHours(3)))
+            )
+            sessCol.insertOne(newSession)
+            return sessionId;
+        }else{
+            return null;
+        }
+
     }
 
-    suspend fun logoutUser(): Unit{
+    //suspend fun logoutUser(): Unit{
 
-    }
+    //}
 
 
 

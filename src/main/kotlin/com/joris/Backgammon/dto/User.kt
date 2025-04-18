@@ -1,18 +1,17 @@
 package com.joris.Backgammon.dto
 
 import org.bson.codecs.pojo.annotations.BsonId
+import org.bson.codecs.pojo.annotations.BsonProperty
+import org.bson.types.ObjectId
+
 
 data class User(
-    @BsonId
-    val userId : String,
-    val email : String,
-    val name : String,
-    val surname : String,
+    @BsonId val userId: ObjectId? = null,
+    val email: String,
+    val name: String,
     val userName: String,
-    var password : String,
-    val configs : List<userSettings>
+    var password: String
 )
-
 enum class Themes {
     WHITE, BLACK
 }
